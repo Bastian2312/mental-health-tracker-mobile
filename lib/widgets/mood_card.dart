@@ -1,53 +1,76 @@
 import 'package:flutter/material.dart';
-import 'package:mental_health_tracker/screens/moodentry_form.dart';
-
-class ItemHomepage {
-     final String name;
-     final IconData icon;
-
-     ItemHomepage(this.name, this.icon);
-}
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import '../screens/list_moodentry.dart';
+import '../screens/login.dart';
+import '../screens/moodentry_form.dart';
 
 class ItemCard extends StatelessWidget {
-  // Menampilkan kartu dengan ikon dan nama.
+  // Display the card with an icon and name.
 
-  final ItemHomepage item; 
-  
-  const ItemCard(this.item, {super.key}); 
+  final ItemHomepage item;
+
+  const ItemCard(this.item, {super.key});
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
     return Material(
-      // Menentukan warna latar belakang dari tema aplikasi.
+      // Specify the background color of the application theme.
       color: Theme.of(context).colorScheme.secondary,
-      // Membuat sudut kartu melengkung.
+      // Round the card border.
       borderRadius: BorderRadius.circular(12),
-      
+
       child: InkWell(
-        // Aksi ketika kartu ditekan.
-        onTap: () {
-          // Menampilkan pesan SnackBar saat kartu ditekan.
+        // Action when the card is pressed.
+        onTap: () async {
+          // Display the SnackBar message when the card is pressed.
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(content: Text("Kamu telah menekan tombol ${item.name}!"))
-            );
-          // Navigate ke route yang sesuai (tergantung jenis tombol)
-          if (item.name == "Tambah Mood") {
+            ..showSnackBar(SnackBar(
+                content: Text("You have pressed the ${item.name} button!")));
+          if (item.name == "Add Mood") {
+            Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MoodEntryFormPage(),
+                ));
+          } else if (item.name == "View Mood") {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => MoodEntryFormPage(),
-              ),
+              MaterialPageRoute(builder: (context) => const MoodEntryPage()),
             );
+          } else if (item.name == "Logout") {
+            final response = await request.logout(
+                // TODO: Change the URL to your Django app's URL. Don't forget to add the trailing slash (/) if needed.
+                "http://localhost:8000/auth/logout/");
+            String message = response["message"];
+            if (context.mounted) {
+              if (response['status']) {
+                String uname = response["username"];
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  content: Text("$message Goodbye, $uname."),
+                ));
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(message),
+                  ),
+                );
+              }
+            }
           }
         },
-        // Container untuk menyimpan Icon dan Text
+        // Container to store the Icon and Text
         child: Container(
           padding: const EdgeInsets.all(8),
           child: Center(
             child: Column(
-              // Menyusun ikon dan teks di tengah kartu.
+              // Place the Icon and Text in the center of the card.
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
@@ -68,5 +91,11 @@ class ItemCard extends StatelessWidget {
       ),
     );
   }
-  
+}
+
+class ItemHomepage {
+  final String name;
+  final IconData icon;
+
+  ItemHomepage(this.name, this.icon);
 }
